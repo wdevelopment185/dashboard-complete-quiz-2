@@ -146,7 +146,7 @@ export const bulkUpdateUsers = async (criteria, userData) => {
   return response.data;
 };
 
-// Document API functions (for future use)
+// Document API functions
 export const uploadDocument = async (formData) => {
   const response = await api.post('/api/documents/upload', formData, {
     headers: {
@@ -166,8 +166,28 @@ export const getDocument = async (id) => {
   return response.data;
 };
 
+export const updateDocument = async (id, data) => {
+  const response = await api.put(`/api/documents/${id}`, data);
+  return response.data;
+};
+
 export const deleteDocument = async (id) => {
   const response = await api.delete(`/api/documents/${id}`);
+  return response.data;
+};
+
+export const updateDocumentStatus = async (id, status) => {
+  const response = await api.patch(`/api/documents/${id}/status`, { status });
+  return response.data;
+};
+
+export const bulkDeleteDocuments = async (criteria, data) => {
+  const response = await api.delete(`/api/documents/bulk/${criteria}`, { data });
+  return response.data;
+};
+
+export const getDocumentStats = async () => {
+  const response = await api.get('/api/documents/analytics/stats');
   return response.data;
 };
 

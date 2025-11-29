@@ -100,6 +100,8 @@ app.use('/api', require('./myFiles/auth'));
 console.log('Auth routes mounted');
 app.use('/api', require('./myFiles/users'));
 console.log('Users routes mounted');
+app.use('/api', require('./myFiles/documents'));
+console.log('Documents routes mounted');
 app.use('/api', require('./myFiles/analytics'));
 console.log('Analytics routes mounted');
 

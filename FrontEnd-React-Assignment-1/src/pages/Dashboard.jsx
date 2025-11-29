@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
 import UserManagement from '../components/UserManagement';
+import DocumentManagement from '../components/DocumentManagement';
 import {
   BookOpen,
   BarChart3,
@@ -226,10 +227,14 @@ const Dashboard = () => {
               <div className="flex items-center gap-4">
                 <div>
                   <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    {activeView === 'users' ? 'User Management' : `Welcome back, ${user?.name || 'User'}!`}
+                    {activeView === 'users' ? 'User Management' : 
+                     activeView === 'documents' ? 'Document Management' : 
+                     `Welcome back, ${user?.name || 'User'}!`}
                   </h1>
                   <p className="text-gray-600 mt-1">
-                    {activeView === 'users' ? 'Manage all system users' : "Here's your document management overview"}
+                    {activeView === 'users' ? 'Manage all system users' : 
+                     activeView === 'documents' ? 'Manage your documents and files' : 
+                     "Here's your document management overview"}
                   </p>
                 </div>
               </div>
@@ -266,6 +271,8 @@ const Dashboard = () => {
             {/* Conditional Rendering based on activeView */}
             {activeView === 'users' ? (
               <UserManagement />
+            ) : activeView === 'documents' ? (
+              <DocumentManagement />
             ) : activeView === 'overview' ? (
               <>
             {/* Stats Cards */}
