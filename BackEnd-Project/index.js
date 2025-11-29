@@ -93,10 +93,27 @@ app.get('/health/detailed', async (req, res) => {
 });
 
 // Mount API routes
+console.log('Mounting API routes...');
 app.use('/api', require('./myFiles/register'));
+console.log('Register routes mounted');
 app.use('/api', require('./myFiles/auth'));
+console.log('Auth routes mounted');
 app.use('/api', require('./myFiles/users'));
+console.log('Users routes mounted');
 app.use('/api', require('./myFiles/analytics'));
+console.log('Analytics routes mounted');
+
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
+  next();
+});
+
+// Catch-all for unmatched routes
+app.use((req, res) => {
+  console.log(`Unmatched route: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({ message: `Route ${req.method} ${req.originalUrl} not found` });
+});
 
 const PORT = process.env.PORT || 5000;
 

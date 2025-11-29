@@ -1,6 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const { authenticateToken } = require('../middleware/auth');
+const mongoose = require('mongoose');
+
+// Test route to verify router is working
+router.get('/users/test', (req, res) => {
+  res.json({ message: 'Users router is working!' });
+});
 
 // GET /api/users - Get all users (for admin/testing)
 router.get('/users', async (req, res) => {

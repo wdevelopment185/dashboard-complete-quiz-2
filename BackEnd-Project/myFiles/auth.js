@@ -41,7 +41,7 @@ router.post('/login', loginValidators, async (req, res) => {
     };
     const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: jwtExpiresIn });
 
-    return res.json({ message: 'Login successful', token, user: { firstName: user.firstName, email: user.email } });
+    return res.json({ message: 'Login successful', token, user: { name: user.firstName, firstName: user.firstName, email: user.email } });
   } catch (err) {
     console.error('Login error:', err);
     return res.status(500).json({ message: 'Server error' });
@@ -59,6 +59,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
     res.json({
       user: {
         id: user._id,
+        name: user.firstName, // Add name field for compatibility
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
@@ -104,7 +105,7 @@ router.post('/refresh', authenticateToken, async (req, res) => {
     res.json({ 
       message: 'Token refreshed successfully', 
       token,
-      user: { firstName: user.firstName, email: user.email }
+      user: { name: user.firstName, firstName: user.firstName, email: user.email }
     });
   } catch (error) {
     console.error('Token refresh error:', error);

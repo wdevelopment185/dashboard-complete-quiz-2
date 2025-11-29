@@ -113,13 +113,27 @@ export const getUser = async (id) => {
 };
 
 export const updateUser = async (id, userData) => {
-  const response = await api.put(`/api/users/${id}`, userData);
-  return response.data;
+  console.log('API: Updating user', id, 'with data:', userData);
+  try {
+    const response = await api.put(`/api/users/${id}`, userData);
+    console.log('API: Update response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('API: Update error:', error.response?.data || error.message);
+    throw error;
+  }
 };
 
 export const deleteUser = async (id) => {
-  const response = await api.delete(`/api/users/${id}`);
-  return response.data;
+  console.log('API: Deleting user', id);
+  try {
+    const response = await api.delete(`/api/users/${id}`);
+    console.log('API: Delete response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('API: Delete error:', error.response?.data || error.message);
+    throw error;
+  }
 };
 
 export const bulkDeleteUsers = async (criteria) => {
