@@ -33,8 +33,8 @@ import {
   Users
 } from 'lucide-react';
 
-// Charts will be populated from real data
-let uploadTrendData = [];
+// Charts will be populated from real data (now using state below)
+// Removed non-reactive variable.
 
 const documentTypeData = [
   { name: 'PDFs', value: 45, color: '#3B82F6' },
@@ -43,7 +43,7 @@ const documentTypeData = [
   { name: 'Others', value: 10, color: '#EF4444' }
 ];
 
-let activityData = [];
+// Removed non-reactive activityData variable (state used below)
 
 const recentDocs = [
   { 
@@ -93,6 +93,8 @@ const Dashboard = () => {
     activeAlerts: 0,
     monthlyUploads: 0
   });
+  const [trendData, setTrendData] = useState([]);
+  const [activitySeries, setActivitySeries] = useState([]);
 
   // Load real stats from backend
   useEffect(() => {
@@ -126,7 +128,7 @@ const Dashboard = () => {
         // Fetch upload trend series from backend (last 6 months)
         const trendsResp = await getDocumentTrends(6);
         const series = trendsResp?.series || [];
-        uploadTrendData = series.map(s => ({ month: s.month, uploads: s.uploads, storage: s.storage }));
+        setTrendData(series.map(s => ({ month: s.month, uploads: s.uploads, storage: s.storage })));
 
         // Build simple hourly activity from last 24h uploads
         const lastDayDocs = documents.filter(d => {
@@ -134,10 +136,14 @@ const Dashboard = () => {
           return now - c <= 24 * 60 * 60 * 1000 && d.status !== 'deleted';
         });
         const hours = [0,4,8,12,16,20];
-        activityData = hours.map(h => {
-          const count = lastDayDocs.filter(d => new Date(d.createdAt).getHours() >= h && new Date(d.createdAt).getHours() < h + 4).length;
-          return { time: `${String(h).padStart(2,'0')}:00`, activity: count };
+        const actData = hours.map(h => {
+          const count = lastDayDocs.filter(d => {
+            const hr = new Date(d.createdAt).getHours();
+            return hr >= h && hr < h + 4;
+          }).length;
+            return { time: `${String(h).padStart(2,'0')}:00`, activity: count };
         });
+        setActivitySeries(actData);
       } catch (e) {
         // If API fails, keep defaults
         console.error('Failed to load dashboard stats', e);
@@ -346,33 +352,39 @@ const Dashboard = () => {
                   Upload Trends
                 </h3>
                 <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={uploadTrendData}>
-                    <defs>
-                      <linearGradient id="colorUploads" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="month" stroke="#6b7280" />
-                    <YAxis stroke="#6b7280" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        border: 'none', 
-                        borderRadius: '12px', 
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
-                      }} 
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="uploads" 
-                      stroke="#3B82F6" 
-                      fillOpacity={1} 
-                      fill="url(#colorUploads)" 
-                      strokeWidth={3}
-                    />
-                  </AreaChart>
+                  {(() => {
+                    const maxUploads = trendData.length ? Math.max(...trendData.map(d => d.uploads)) : 0;
+                    const ticks = Array.from({ length: maxUploads + 1 }, (_, i) => i);
+                    return (
+                      <AreaChart data={trendData}>
+                        <defs>
+                          <linearGradient id="colorUploads" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                            <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="month" stroke="#6b7280" />
+                        <YAxis stroke="#6b7280" allowDecimals={false} ticks={ticks} domain={[0, maxUploads]} />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'white', 
+                            border: 'none', 
+                            borderRadius: '12px', 
+                            boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
+                          }} 
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="uploads" 
+                          stroke="#3B82F6" 
+                          fillOpacity={1} 
+                          fill="url(#colorUploads)" 
+                          strokeWidth={3}
+                        />
+                      </AreaChart>
+                    );
+                  })()}
                 </ResponsiveContainer>
               </motion.div>
 
@@ -482,7 +494,7 @@ const Dashboard = () => {
                   Daily Activity
                 </h3>
                 <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={activityData}>
+                  <BarChart data={activitySeries}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="time" stroke="#6b7280" />
                     <YAxis stroke="#6b7280" />
