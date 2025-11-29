@@ -7,6 +7,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
+import { getDocumentStats, getDocumentTrends, getDocuments } from '../services/api';
 import UserManagement from '../components/UserManagement';
 import DocumentManagement from '../components/DocumentManagement';
 import UploadPage from './UploadPage';
@@ -32,15 +33,8 @@ import {
   Users
 } from 'lucide-react';
 
-// Mock data for charts
-const uploadTrendData = [
-  { month: 'Jan', uploads: 12, storage: 2.4 },
-  { month: 'Feb', uploads: 19, storage: 3.8 },
-  { month: 'Mar', uploads: 15, storage: 3.2 },
-  { month: 'Apr', uploads: 25, storage: 5.1 },
-  { month: 'May', uploads: 22, storage: 4.8 },
-  { month: 'Jun', uploads: 30, storage: 6.2 }
-];
+// Charts will be populated from real data
+let uploadTrendData = [];
 
 const documentTypeData = [
   { name: 'PDFs', value: 45, color: '#3B82F6' },
@@ -49,14 +43,7 @@ const documentTypeData = [
   { name: 'Others', value: 10, color: '#EF4444' }
 ];
 
-const activityData = [
-  { time: '00:00', activity: 2 },
-  { time: '04:00', activity: 1 },
-  { time: '08:00', activity: 8 },
-  { time: '12:00', activity: 15 },
-  { time: '16:00', activity: 12 },
-  { time: '20:00', activity: 6 }
-];
+let activityData = [];
 
 const recentDocs = [
   { 
@@ -107,26 +94,57 @@ const Dashboard = () => {
     monthlyUploads: 0
   });
 
-  // Simulate real-time data updates
+  // Load real stats from backend
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStats(prev => ({
-        totalDocs: 127 + Math.floor(Math.random() * 5),
-        storageUsed: 15.8 + Math.random() * 2,
-        activeAlerts: Math.floor(Math.random() * 3),
-        monthlyUploads: 45 + Math.floor(Math.random() * 10)
-      }));
-    }, 5000);
+    const loadStats = async () => {
+      try {
+        const docStatsResp = await getDocumentStats();
+        const { stats } = docStatsResp || {};
 
-    // Initial load
-    setStats({
-      totalDocs: 127,
-      storageUsed: 15.8,
-      activeAlerts: 2,
-      monthlyUploads: 45
-    });
+        const totalDocs = stats?.totalDocuments || 0;
+        const archivedDocs = stats?.archivedDocuments || 0;
+        const totalSizeBytes = stats?.totalSize || 0;
+        const storageUsedGb = totalSizeBytes / (1024 * 1024 * 1024);
 
-    return () => clearInterval(interval);
+        // Compute monthly uploads using documents list filtered by current month
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const docsResp = await getDocuments({ limit: 500, sortBy: 'createdAt', sortOrder: 'desc' });
+        const documents = docsResp?.documents || [];
+        const monthlyUploads = documents.filter(d => {
+          const createdAt = new Date(d.createdAt);
+          return createdAt >= startOfMonth && createdAt <= now && d.status !== 'deleted';
+        }).length;
+
+        setStats({
+          totalDocs,
+          storageUsed: storageUsedGb,
+          activeAlerts: archivedDocs,
+          monthlyUploads
+        });
+
+        // Fetch upload trend series from backend (last 6 months)
+        const trendsResp = await getDocumentTrends(6);
+        const series = trendsResp?.series || [];
+        uploadTrendData = series.map(s => ({ month: s.month, uploads: s.uploads, storage: s.storage }));
+
+        // Build simple hourly activity from last 24h uploads
+        const lastDayDocs = documents.filter(d => {
+          const c = new Date(d.createdAt);
+          return now - c <= 24 * 60 * 60 * 1000 && d.status !== 'deleted';
+        });
+        const hours = [0,4,8,12,16,20];
+        activityData = hours.map(h => {
+          const count = lastDayDocs.filter(d => new Date(d.createdAt).getHours() >= h && new Date(d.createdAt).getHours() < h + 4).length;
+          return { time: `${String(h).padStart(2,'0')}:00`, activity: count };
+        });
+      } catch (e) {
+        // If API fails, keep defaults
+        console.error('Failed to load dashboard stats', e);
+      }
+    };
+
+    loadStats();
   }, []);
 
   const getStatusColor = (status) => {
@@ -298,9 +316,11 @@ const Dashboard = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-gray-900">
-                        <CountUp end={typeof stat.value === 'number' ? stat.value : 0} duration={2} />
-                        {typeof stat.value === 'string' && !stat.value.includes('GB') ? stat.value : ''}
-                        {stat.value.toString().includes('GB') ? ' GB' : ''}
+                        {stat.label === 'Storage Used' ? (
+                          <>{stats.storageUsed.toFixed(2)} GB</>
+                        ) : (
+                          <CountUp end={typeof stat.value === 'number' ? stat.value : 0} duration={1.2} />
+                        )}
                       </p>
                       <p className="text-sm text-gray-500">{stat.label}</p>
                     </div>

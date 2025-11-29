@@ -191,6 +191,11 @@ export const getDocumentStats = async () => {
   return response.data;
 };
 
+export const getDocumentTrends = async (months = 6) => {
+  const response = await api.get(`/api/documents/analytics/trends?months=${months}`);
+  return response.data;
+};
+
 // Analytics API functions (for dashboard)
 export const getDashboardStats = async () => {
   const response = await api.get('/api/analytics/dashboard');

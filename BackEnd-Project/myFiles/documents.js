@@ -506,4 +506,64 @@ router.get('/documents/analytics/stats', authenticateToken, async (req, res) => 
   }
 });
 
+// ANALYTICS - Monthly upload trends and storage per month
+router.get('/documents/analytics/trends', authenticateToken, async (req, res) => {
+  try {
+    const { months = 6 } = req.query;
+    const monthsInt = Math.min(Math.max(parseInt(months) || 6, 1), 24);
+
+    const end = new Date();
+    const start = new Date(end.getFullYear(), end.getMonth() - (monthsInt - 1), 1);
+
+    // Aggregate by year-month
+    const pipeline = [
+      { $match: { status: { $ne: 'deleted' }, createdAt: { $gte: start, $lte: end } } },
+      { $project: {
+          year: { $year: '$createdAt' },
+          month: { $month: '$createdAt' },
+          size: '$size'
+        }
+      },
+      { $group: {
+          _id: { year: '$year', month: '$month' },
+          uploads: { $sum: 1 },
+          totalSize: { $sum: { $ifNull: ['$size', 0] } }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } }
+    ];
+
+    const agg = await Document.aggregate(pipeline);
+
+    // Build a complete series ensuring months with zero data are present
+    const series = [];
+    for (let i = monthsInt - 1; i >= 0; i--) {
+      const dt = new Date(end.getFullYear(), end.getMonth() - i, 1);
+      const found = agg.find(a => a._id.year === dt.getFullYear() && a._id.month === dt.getMonth() + 1);
+      const uploads = found ? found.uploads : 0;
+      const storageGb = found ? (found.totalSize / (1024 * 1024 * 1024)) : 0;
+      series.push({
+        year: dt.getFullYear(),
+        monthIndex: dt.getMonth(),
+        month: dt.toLocaleString(undefined, { month: 'short' }),
+        uploads,
+        storage: Number(storageGb.toFixed(2))
+      });
+    }
+
+    res.json({
+      success: true,
+      months: monthsInt,
+      series
+    });
+  } catch (error) {
+    console.error('Document trends error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch document trends',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
