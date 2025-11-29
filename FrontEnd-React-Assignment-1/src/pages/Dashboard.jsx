@@ -24,9 +24,6 @@ import {
   TrendingUp,
   HardDrive,
   ClipboardList,
-  Home,
-  Car,
-  Briefcase,
   Zap,
   Lightbulb,
   Users
@@ -47,45 +44,6 @@ const TYPE_COLORS = {
 
 // Removed non-reactive activityData variable (state used below)
 
-const recentDocs = [
-  { 
-    id: 1,
-    title: 'Financial Report Q3 2024', 
-    meta: 'Uploaded 2 hours ago', 
-    status: 'Processing',
-    type: 'PDF',
-    size: '2.4 MB',
-    icon: BarChart3
-  },
-  { 
-    id: 2,
-    title: 'Property Insurance Policy', 
-    meta: 'Uploaded 1 day ago', 
-    status: 'Active',
-    type: 'PDF',
-    size: '1.8 MB',
-    icon: Home
-  },
-  { 
-    id: 3,
-    title: 'Vehicle Registration', 
-    meta: 'Uploaded 3 days ago', 
-    status: 'Active',
-    type: 'Image',
-    size: '856 KB',
-    icon: Car
-  },
-  { 
-    id: 4,
-    title: 'Employment Contract', 
-    meta: 'Uploaded 1 week ago', 
-    status: 'Archived',
-    type: 'DOCX',
-    size: '324 KB',
-    icon: Briefcase
-  }
-];
-
 const Dashboard = () => {
   const { user } = useAuth();
   const [activeView, setActiveView] = useState('overview'); // 'overview' or 'users'
@@ -98,6 +56,7 @@ const Dashboard = () => {
   });
   const [trendData, setTrendData] = useState([]);
   const [activitySeries, setActivitySeries] = useState([]);
+  const [recentDocs, setRecentDocs] = useState([]);
 
   // Load real stats from backend
   useEffect(() => {
@@ -128,6 +87,17 @@ const Dashboard = () => {
           activeAlerts: archivedDocs,
           monthlyUploads
         });
+
+        // Recent uploads from stats
+        const rec = (stats?.recentUploads || []).map(d => ({
+          id: d._id || d.id,
+          title: d.title || d.originalName,
+          createdAt: d.createdAt,
+          size: d.size || 0,
+          type: (d.originalName || '').split('.').pop()?.toUpperCase() || 'FILE',
+          status: (d.status || 'active').charAt(0).toUpperCase() + (d.status || 'active').slice(1)
+        }));
+        setRecentDocs(rec);
 
         // Prepare document types pie data from actual file extensions
         const counters = { PDF: 0, Word: 0, Excel: 0, PowerPoint: 0, Text: 0, Others: 0 };
@@ -182,6 +152,29 @@ const Dashboard = () => {
       case 'Archived': return 'text-gray-600 bg-gray-50';
       default: return 'text-blue-600 bg-blue-50';
     }
+  };
+
+  const formatRelativeTime = (iso) => {
+    if (!iso) return '';
+    const now = new Date();
+    const dt = new Date(iso);
+    const diffMs = now - dt;
+    const mins = Math.floor(diffMs / (60 * 1000));
+    const hours = Math.floor(mins / 60);
+    const days = Math.floor(hours / 24);
+    if (mins < 60) return `Uploaded ${mins} minute${mins !== 1 ? 's' : ''} ago`;
+    if (hours < 24) return `Uploaded ${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    return `Uploaded ${days} day${days !== 1 ? 's' : ''} ago`;
+  };
+
+  const formatSize = (bytes) => {
+    const KB = 1024;
+    const MB = KB * 1024;
+    const GB = MB * 1024;
+    if (bytes < KB) return `${bytes} Bytes`;
+    if (bytes < MB) return `${Math.round(bytes / KB)} KB`;
+    if (bytes < GB) return `${(bytes / MB).toFixed(1)} MB`;
+    return `${(bytes / GB).toFixed(2)} GB`;
   };
 
   const containerVariants = {
@@ -479,12 +472,19 @@ const Dashboard = () => {
                     <ClipboardList className="h-6 w-6" />
                     Recent Documents
                   </h3>
-                  <Link to="#" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                  <button 
+                    onClick={() => setActiveView('documents')}
+                    className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                  >
                     View all →
-                  </Link>
+                  </button>
                 </div>
                 <div className="space-y-4">
-                  {recentDocs.map((doc, index) => (
+                    {(!recentDocs || recentDocs.length === 0) ? (
+                      <div className="h-[200px] flex items-center justify-center text-gray-500 bg-gray-50 rounded-xl">
+                        No recent documents
+                      </div>
+                    ) : recentDocs.map((doc, index) => (
                     <motion.div
                       key={doc.id}
                       initial={{ x: -20, opacity: 0 }}
@@ -495,24 +495,27 @@ const Dashboard = () => {
                     >
                       <div className="flex items-center gap-4">
                         <div className="h-12 w-12 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-xl shadow-lg">
-                          <doc.icon className="h-6 w-6" />
+                            <FileText className="h-6 w-6" />
                         </div>
                         <div>
                           <p className="font-semibold text-gray-900">{doc.title}</p>
                           <div className="flex items-center gap-4 mt-1">
-                            <p className="text-sm text-gray-500">{doc.meta}</p>
-                            <span className="text-xs text-gray-400">• {doc.size}</span>
-                            <span className="text-xs text-gray-400">• {doc.type}</span>
+                              <p className="text-sm text-gray-500">{formatRelativeTime(doc.createdAt)}</p>
+                              <span className="text-xs text-gray-400">• {formatSize(doc.size)}</span>
+                              <span className="text-xs text-gray-400">• {doc.type}</span>
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(doc.status)}`}>
-                          {doc.status}
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(doc.status)}`}>
+                            {doc.status}
                         </span>
-                        <button className="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors">
+                        <Link
+                          to={`/documents/${doc.id}`}
+                          className="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
+                        >
                           Open
-                        </button>
+                        </Link>
                       </div>
                     </motion.div>
                   ))}

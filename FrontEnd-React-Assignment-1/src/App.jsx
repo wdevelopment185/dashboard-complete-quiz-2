@@ -9,6 +9,7 @@ import Services from './pages/Services';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Dashboard from './pages/Dashboard';
+import DocumentDetails from './pages/DocumentDetails';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
@@ -73,6 +74,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/documents/:id" 
+              element={
+                <ProtectedRoute>
+                  <DocumentDetails />
                 </ProtectedRoute>
               } 
             />
