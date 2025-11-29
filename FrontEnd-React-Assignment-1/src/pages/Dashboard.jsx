@@ -169,19 +169,9 @@ const Dashboard = () => {
           animate={{ x: 0 }}
           className="w-64 bg-white/80 backdrop-blur-sm border-r border-gray-200 p-6 min-h-screen pt-8 shadow-lg"
         >
-          <div className="flex items-center space-x-3 mb-8">
-            <div className="h-12 w-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-gray-900">Document Optimizer</div>
-              <div className="text-xs text-gray-500">Professional Suite</div>
-            </div>
-          </div>
+          {/* Brand header removed from sidebar as requested */}
 
-          <nav>
+          <nav className="mt-2">
             <ul className="space-y-2">
               {[
                 { icon: BarChart3, label: 'Dashboard', view: 'overview', active: activeView === 'overview' },
