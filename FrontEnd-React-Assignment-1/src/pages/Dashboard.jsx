@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import UserManagement from '../components/UserManagement';
 import DocumentManagement from '../components/DocumentManagement';
+import UploadPage from './UploadPage';
 import {
   BookOpen,
   BarChart3,
@@ -229,11 +230,13 @@ const Dashboard = () => {
                   <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                     {activeView === 'users' ? 'User Management' : 
                      activeView === 'documents' ? 'Document Management' : 
+                     activeView === 'upload' ? 'Upload Documents' :
                      `Welcome back, ${user?.name || 'User'}!`}
                   </h1>
                   <p className="text-gray-600 mt-1">
                     {activeView === 'users' ? 'Manage all system users' : 
                      activeView === 'documents' ? 'Manage your documents and files' : 
+                     activeView === 'upload' ? 'Upload and organize your files' :
                      "Here's your document management overview"}
                   </p>
                 </div>
@@ -273,6 +276,8 @@ const Dashboard = () => {
               <UserManagement />
             ) : activeView === 'documents' ? (
               <DocumentManagement />
+            ) : activeView === 'upload' ? (
+              <UploadPage />
             ) : activeView === 'overview' ? (
               <>
             {/* Stats Cards */}
