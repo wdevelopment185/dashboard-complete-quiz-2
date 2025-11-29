@@ -242,31 +242,8 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="hidden sm:block relative">
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Search className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input 
-                      type="text" 
-                      placeholder="Search documents..." 
-                      className="border border-gray-200 rounded-xl py-3 pl-10 pr-4 w-80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 transition-all"
-                    />
-                  </div>
-                </div>
-                <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-200 font-medium flex items-center gap-2"
-                >
-                  <Upload className="h-5 w-5" />
-                  Upload
-                </motion.button>
-                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg">
-                  {user?.name?.charAt(0) || 'U'}
-                </div>
-              </div>
+              {/* Right-side controls removed as requested */}
+              <div className="flex items-center gap-4"></div>
             </div>
           </motion.header>
 
