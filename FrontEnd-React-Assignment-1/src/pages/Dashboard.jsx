@@ -218,34 +218,36 @@ const Dashboard = () => {
         </motion.aside>
 
         <div className="flex-1 relative">
-          {/* Enhanced Header */}
-          <motion.header 
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="sticky top-0 z-40 bg-white/90 backdrop-blur-sm border-b border-gray-200 shadow-sm"
-          >
-            <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    {activeView === 'users' ? 'User Management' : 
-                     activeView === 'documents' ? 'Document Management' : 
-                     activeView === 'upload' ? 'Upload Documents' :
-                     `Welcome back, ${user?.name || 'User'}!`}
-                  </h1>
-                  <p className="text-gray-600 mt-1">
-                    {activeView === 'users' ? 'Manage all system users' : 
-                     activeView === 'documents' ? 'Manage your documents and files' : 
-                     activeView === 'upload' ? 'Upload and organize your files' :
-                     "Here's your document management overview"}
-                  </p>
+          {/* Header shown only for Overview; hidden on Users/Documents/Upload */}
+          {activeView === 'overview' && (
+            <motion.header 
+              initial={{ y: -50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="sticky top-0 z-40 bg-white/90 backdrop-blur-sm border-b border-gray-200 shadow-sm"
+            >
+              <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      {activeView === 'users' ? 'User Management' : 
+                       activeView === 'documents' ? 'Document Management' : 
+                       activeView === 'upload' ? 'Upload Documents' :
+                       `Welcome back, ${user?.name || 'User'}!`}
+                    </h1>
+                    <p className="text-gray-600 mt-1">
+                      {activeView === 'users' ? 'Manage all system users' : 
+                       activeView === 'documents' ? 'Manage your documents and files' : 
+                       activeView === 'upload' ? 'Upload and organize your files' :
+                       "Here's your document management overview"}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Right-side controls removed as requested */}
-              <div className="flex items-center gap-4"></div>
-            </div>
-          </motion.header>
+                {/* Right-side controls removed as requested */}
+                <div className="flex items-center gap-4"></div>
+              </div>
+            </motion.header>
+          )}
 
           <main className="max-w-7xl mx-auto px-6 py-8">
             {/* Conditional Rendering based on activeView */}
