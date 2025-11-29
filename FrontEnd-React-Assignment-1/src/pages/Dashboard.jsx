@@ -36,12 +36,15 @@ import {
 // Charts will be populated from real data (now using state below)
 // Removed non-reactive variable.
 
-const documentTypeData = [
-  { name: 'PDFs', value: 45, color: '#3B82F6' },
-  { name: 'Images', value: 30, color: '#10B981' },
-  { name: 'Documents', value: 15, color: '#F59E0B' },
-  { name: 'Others', value: 10, color: '#EF4444' }
-];
+// File-type colors for pie chart
+const TYPE_COLORS = {
+  PDF: '#3B82F6',
+  Word: '#2563EB',
+  Excel: '#10B981',
+  PowerPoint: '#F59E0B',
+  Text: '#6B7280',
+  Others: '#EF4444'
+};
 
 // Removed non-reactive activityData variable (state used below)
 
@@ -90,6 +93,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState({
     totalDocs: 0,
     storageUsed: 0,
+    storageBytes: 0,
     activeAlerts: 0,
     monthlyUploads: 0
   });
@@ -121,9 +125,28 @@ const Dashboard = () => {
         setStats({
           totalDocs,
           storageUsed: storageUsedGb,
+          storageBytes: totalSizeBytes,
           activeAlerts: archivedDocs,
           monthlyUploads
         });
+
+        // Prepare document types pie data from actual file extensions
+        const counters = { PDF: 0, Word: 0, Excel: 0, PowerPoint: 0, Text: 0, Others: 0 };
+        documents.forEach(d => {
+          const name = (d.originalName || d.title || '').toLowerCase();
+          const parts = name.split('.');
+          const ext = parts.length > 1 ? parts.pop() : '';
+          if (['pdf'].includes(ext)) counters.PDF++;
+          else if (['doc', 'docx'].includes(ext)) counters.Word++;
+          else if (['xls', 'xlsx'].includes(ext)) counters.Excel++;
+          else if (['ppt', 'pptx', 'ppx', 'ppyx'].includes(ext)) counters.PowerPoint++;
+          else if (['txt', 'rtf'].includes(ext)) counters.Text++;
+          else counters.Others++;
+        });
+        const typeSeries = Object.entries(counters)
+          .map(([name, value]) => ({ name, value, color: TYPE_COLORS[name] || '#9CA3AF' }))
+          .filter(item => item.value > 0);
+        setDocTypeData(typeSeries);
 
         // Fetch upload trend series from backend (last 6 months)
         const trendsResp = await getDocumentTrends(6);
@@ -183,6 +206,8 @@ const Dashboard = () => {
       }
     }
   };
+
+  const [docTypeData, setDocTypeData] = useState([]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -284,28 +309,27 @@ const Dashboard = () => {
                 { 
                   label: 'Total Documents', 
                   value: stats.totalDocs, 
-                  change: '+12%', 
+                   
                   icon: FileText,
                   color: 'from-blue-500 to-blue-600'
                 },
                 { 
                   label: 'Storage Used', 
                   value: `${stats.storageUsed.toFixed(1)} GB`, 
-                  change: '+2.1 GB', 
+                   
                   icon: HardDrive,
                   color: 'from-green-500 to-green-600'
                 },
                 { 
                   label: 'Active Alerts', 
                   value: stats.activeAlerts, 
-                  change: stats.activeAlerts > 0 ? 'Needs attention' : 'All clear', 
                   icon: Bell,
                   color: 'from-yellow-500 to-orange-500'
                 },
                 { 
                   label: 'Monthly Uploads', 
                   value: stats.monthlyUploads, 
-                  change: '+8 this week', 
+                  
                   icon: Upload,
                   color: 'from-purple-500 to-purple-600'
                 }
@@ -323,7 +347,16 @@ const Dashboard = () => {
                     <div className="text-right">
                       <p className="text-2xl font-bold text-gray-900">
                         {stat.label === 'Storage Used' ? (
-                          <>{stats.storageUsed.toFixed(2)} GB</>
+                          (() => {
+                            const bytes = stats.storageBytes || 0;
+                            const KB = 1024;
+                            const MB = KB * 1024;
+                            const GB = MB * 1024;
+                            if (bytes < KB) return `${bytes} Bytes`;
+                            if (bytes < MB) return `${Math.round(bytes / KB)} KB`;
+                            if (bytes < GB) return `${(bytes / MB).toFixed(2)} MB`;
+                            return `${(bytes / GB).toFixed(2)} GB`;
+                          })()
                         ) : (
                           <CountUp end={typeof stat.value === 'number' ? stat.value : 0} duration={1.2} />
                         )}
@@ -399,32 +432,38 @@ const Dashboard = () => {
                   <BarChart3 className="h-6 w-6" />
                   Document Types
                 </h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={documentTypeData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={120}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {documentTypeData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        border: 'none', 
-                        borderRadius: '12px', 
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
-                      }} 
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+                {docTypeData.length === 0 || docTypeData.reduce((s,d)=>s+d.value,0) === 0 ? (
+                  <div className="h-[300px] flex items-center justify-center text-gray-500">
+                    No documents uploaded
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={docTypeData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={120}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {docTypeData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: 'none', 
+                          borderRadius: '12px', 
+                          boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
+                        }} 
+                      />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
               </motion.div>
             </div>
 
@@ -493,33 +532,39 @@ const Dashboard = () => {
                   <Zap className="h-6 w-6" />
                   Daily Activity
                 </h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={activitySeries}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="time" stroke="#6b7280" />
-                    <YAxis stroke="#6b7280" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        border: 'none', 
-                        borderRadius: '12px', 
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
-                      }} 
-                    />
-                    <Bar 
-                      dataKey="activity" 
-                      fill="url(#colorActivity)" 
-                      radius={[4, 4, 0, 0]}
-                    >
-                      <defs>
-                        <linearGradient id="colorActivity" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.3}/>
-                        </linearGradient>
-                      </defs>
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                {(activitySeries.length === 0 || activitySeries.every(d => d.activity === 0)) ? (
+                  <div className="h-[250px] flex items-center justify-center text-gray-500">
+                    No activity in the last 24 hours
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={activitySeries}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="time" stroke="#6b7280" />
+                      <YAxis stroke="#6b7280" allowDecimals={false} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: 'none', 
+                          borderRadius: '12px', 
+                          boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
+                        }} 
+                      />
+                      <Bar 
+                        dataKey="activity" 
+                        fill="url(#colorActivity)" 
+                        radius={[4, 4, 0, 0]}
+                      >
+                        <defs>
+                          <linearGradient id="colorActivity" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
+                            <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.3}/>
+                          </linearGradient>
+                        </defs>
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
 
                 <div className="mt-6 space-y-3">
                   <div className="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
