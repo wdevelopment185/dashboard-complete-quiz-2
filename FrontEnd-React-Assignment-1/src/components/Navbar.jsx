@@ -93,21 +93,7 @@ const Navbar = () => {
                       <p className="text-sm font-medium text-gray-900">{user?.firstName || user?.name || 'User'}</p>
                       <p className="text-xs text-gray-500">{user?.email || 'user@example.com'}</p>
                     </div>
-                    <Link
-                      to="/dashboard"
-                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      Dashboard
-                    </Link>
-                    <Link
-                      to="/profile"
-                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      Settings
-                    </Link>
-                    <div className="border-t border-gray-100 mt-2 pt-2">
+                    <div className="mt-2">
                       <button
                         onClick={handleLogout}
                         className="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -181,13 +167,7 @@ const Navbar = () => {
                   Hi, {user?.firstName || user?.name || 'User'}!
                   <div className="text-sm text-gray-500 mt-1">{user?.email || 'user@example.com'}</div>
                 </div>
-                <Link 
-                  to="/profile" 
-                  className="flex items-center px-4 py-3 rounded-xl text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200" 
-                  onClick={() => setIsOpen(false)}
-                >
-                  Settings
-                </Link>
+                {/* Settings removed from mobile dropdown */}
                 <button 
                   onClick={() => {
                     handleLogout();
