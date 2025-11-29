@@ -1,4 +1,4 @@
-# Login System with LocalStorage and without Models - Quiz 1
+# Dashboard-complete-quiz-2
 
 A full-stack login and registration system built with React frontend and Node.js backend.
 
