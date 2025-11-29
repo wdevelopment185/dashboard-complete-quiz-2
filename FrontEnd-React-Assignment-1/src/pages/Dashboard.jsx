@@ -7,7 +7,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
-import HealthBadge from '../components/HealthBadge';
+import UserManagement from '../components/UserManagement';
 import {
   BookOpen,
   BarChart3,
@@ -26,7 +26,8 @@ import {
   Car,
   Briefcase,
   Zap,
-  Lightbulb
+  Lightbulb,
+  Users
 } from 'lucide-react';
 
 // Mock data for charts
@@ -96,6 +97,7 @@ const recentDocs = [
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const [activeView, setActiveView] = useState('overview'); // 'overview' or 'users'
   const [stats, setStats] = useState({
     totalDocs: 0,
     storageUsed: 0,
@@ -177,21 +179,18 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="mb-6">
-            <HealthBadge />
-          </div>
-
           <nav>
             <ul className="space-y-2">
               {[
-                { icon: BarChart3, label: 'Dashboard', active: true },
-                { icon: FileText, label: 'Documents' },
-                { icon: Upload, label: 'Upload' },
-                { icon: Package, label: 'Bulk Upload' },
-                { icon: Bell, label: 'Alerts' },
-                { icon: Folder, label: 'Folders' },
-                { icon: User, label: 'Profile' },
-                { icon: Settings, label: 'Settings' }
+                { icon: BarChart3, label: 'Dashboard', view: 'overview', active: activeView === 'overview' },
+                { icon: Users, label: 'User Management', view: 'users', active: activeView === 'users' },
+                { icon: FileText, label: 'Documents', view: 'documents' },
+                { icon: Upload, label: 'Upload', view: 'upload' },
+                { icon: Package, label: 'Bulk Upload', view: 'bulk' },
+                { icon: Bell, label: 'Alerts', view: 'alerts' },
+                { icon: Folder, label: 'Folders', view: 'folders' },
+                { icon: User, label: 'Profile', view: 'profile' },
+                { icon: Settings, label: 'Settings', view: 'settings' }
               ].map((item, index) => (
                 <motion.li
                   key={item.label}
@@ -199,9 +198,9 @@ const Dashboard = () => {
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: index * 0.1 }}
                 >
-                  <Link 
-                    to={item.active ? "/dashboard" : "#"} 
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  <button 
+                    onClick={() => setActiveView(item.view)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                       item.active 
                         ? 'text-blue-700 bg-blue-50 shadow-sm border border-blue-100' 
                         : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'
@@ -209,7 +208,7 @@ const Dashboard = () => {
                   >
                     <item.icon className="h-5 w-5" />
                     {item.label}
-                  </Link>
+                  </button>
                 </motion.li>
               ))}
             </ul>
@@ -227,9 +226,11 @@ const Dashboard = () => {
               <div className="flex items-center gap-4">
                 <div>
                   <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    Welcome back, {user?.name || 'User'}!
+                    {activeView === 'users' ? 'User Management' : `Welcome back, ${user?.name || 'User'}!`}
                   </h1>
-                  <p className="text-gray-600 mt-1">Here's your document management overview</p>
+                  <p className="text-gray-600 mt-1">
+                    {activeView === 'users' ? 'Manage all system users' : "Here's your document management overview"}
+                  </p>
                 </div>
               </div>
 
@@ -262,6 +263,11 @@ const Dashboard = () => {
           </motion.header>
 
           <main className="max-w-7xl mx-auto px-6 py-8">
+            {/* Conditional Rendering based on activeView */}
+            {activeView === 'users' ? (
+              <UserManagement />
+            ) : activeView === 'overview' ? (
+              <>
             {/* Stats Cards */}
             <motion.div 
               variants={containerVariants}
@@ -515,6 +521,12 @@ const Dashboard = () => {
                 </div>
               </motion.div>
             </div>
+              </>
+            ) : (
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-12 shadow-lg border border-gray-100 text-center">
+                <p className="text-gray-600 text-lg">This section is coming soon...</p>
+              </div>
+            )}
           </main>
         </div>
       </div>

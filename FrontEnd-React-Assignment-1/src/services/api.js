@@ -101,6 +101,37 @@ export const changePassword = async (passwordData) => {
   return response.data;
 };
 
+// User Management API functions (CRUD operations)
+export const getAllUsers = async () => {
+  const response = await api.get('/api/users');
+  return response.data;
+};
+
+export const getUser = async (id) => {
+  const response = await api.get(`/api/users/${id}`);
+  return response.data;
+};
+
+export const updateUser = async (id, userData) => {
+  const response = await api.put(`/api/users/${id}`, userData);
+  return response.data;
+};
+
+export const deleteUser = async (id) => {
+  const response = await api.delete(`/api/users/${id}`);
+  return response.data;
+};
+
+export const bulkDeleteUsers = async (criteria) => {
+  const response = await api.delete(`/api/bulk/${criteria}`);
+  return response.data;
+};
+
+export const bulkUpdateUsers = async (criteria, userData) => {
+  const response = await api.put(`/api/bulk/${criteria}`, userData);
+  return response.data;
+};
+
 // Document API functions (for future use)
 export const uploadDocument = async (formData) => {
   const response = await api.post('/api/documents/upload', formData, {
