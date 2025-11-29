@@ -42,6 +42,7 @@ const DocumentManagement = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
   
   // Selected document
   const [selectedDocument, setSelectedDocument] = useState(null);
@@ -75,12 +76,25 @@ const DocumentManagement = () => {
 
   const categories = [
     { value: 'all', label: 'All Categories' },
+    { value: 'pdf', label: 'PDF' },
     { value: 'document', label: 'Documents' },
-    { value: 'image', label: 'Images' },
-    { value: 'video', label: 'Videos' },
-    { value: 'audio', label: 'Audio' },
-    { value: 'other', label: 'Other' }
+    { value: 'textfiles', label: 'Text Files' },
+    { value: 'spreadsheet', label: 'Spreadsheets' },
+    { value: 'presentation', label: 'Presentations' }
   ];
+
+  // Map file extensions to categories
+  const getFileCategory = (filename) => {
+    if (!filename) return 'other';
+    const ext = filename.toLowerCase().split('.').pop();
+    
+    if (['pdf'].includes(ext)) return 'pdf';
+    if (['doc', 'docx'].includes(ext)) return 'document';
+    if (['txt', 'rtf'].includes(ext)) return 'textfiles';
+    if (['xls', 'xlsx'].includes(ext)) return 'spreadsheet';
+    if (['ppt', 'pptx'].includes(ext)) return 'presentation';
+    return 'other';
+  };
 
   const statuses = [
     { value: 'active', label: 'Active' },
@@ -94,15 +108,30 @@ const DocumentManagement = () => {
       const params = {
         page,
         limit: 12,
-        category: selectedCategory !== 'all' ? selectedCategory : undefined,
         status: selectedStatus,
         search: searchQuery || undefined
       };
 
       const response = await api.getDocuments(params);
-      setDocuments(response.documents || []);
-      setFilteredDocuments(response.documents || []);
-      setPagination(response.pagination || {});
+      let docs = response.documents || [];
+      
+      // Filter by selected category based on file type
+      if (selectedCategory !== 'all') {
+        docs = docs.filter(doc => {
+          const docCategory = getFileCategory(doc.originalName || doc.title);
+          return docCategory === selectedCategory;
+        });
+      }
+
+      setDocuments(docs);
+      setFilteredDocuments(docs);
+      
+      // Update pagination to reflect filtered results
+      setPagination({
+        currentPage: page,
+        totalPages: Math.ceil(docs.length / 12) || 1,
+        totalDocuments: docs.length
+      });
       
       if (message.type === 'error') {
         setMessage({ text: '', type: '' });
@@ -226,6 +255,33 @@ const DocumentManagement = () => {
     }
   };
 
+  // Archive document
+  const handleArchive = async () => {
+    setSubmitting(true);
+    
+    try {
+      const newStatus = selectedDocument.status === 'archived' ? 'active' : 'archived';
+      await api.updateDocumentStatus(selectedDocument._id, newStatus);
+      
+      setMessage({
+        text: `Document ${newStatus === 'archived' ? 'archived' : 'unarchived'} successfully`,
+        type: 'success'
+      });
+      
+      setShowArchiveModal(false);
+      fetchDocuments(pagination.currentPage);
+      
+    } catch (error) {
+      console.error('Archive error:', error);
+      setMessage({
+        text: error.response?.data?.message || 'Archive action failed',
+        type: 'error'
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // Download document
   const handleDownload = async (document) => {
     try {
@@ -253,7 +309,7 @@ const DocumentManagement = () => {
   // Handle file selection
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
-    const allowed = new Set(['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.rtf']);
+    const allowed = new Set(['.pdf', '.doc', '.docx', '.txt', '.rtf', '.ppt', '.pptx', '.xls', '.xlsx']);
     const accepted = [];
     const rejected = [];
 
@@ -288,6 +344,12 @@ const DocumentManagement = () => {
   const openDeleteModal = (document) => {
     setSelectedDocument(document);
     setShowDeleteModal(true);
+  };
+
+  // Open archive modal
+  const openArchiveModal = (document) => {
+    setSelectedDocument(document);
+    setShowArchiveModal(true);
   };
 
   // Open view modal
@@ -496,6 +558,12 @@ const DocumentManagement = () => {
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
+                            onClick={() => openArchiveModal(doc)}
+                            className="p-1 text-gray-400 hover:text-orange-600 transition-colors"
+                          >
+                            <Archive className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => openDeleteModal(doc)}
                             className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                           >
@@ -606,6 +674,13 @@ const DocumentManagement = () => {
                               <Edit className="w-4 h-4" />
                             </button>
                             <button
+                              onClick={() => openArchiveModal(doc)}
+                              className="p-1 text-gray-400 hover:text-orange-600 transition-colors"
+                              title="Archive"
+                            >
+                              <Archive className="w-4 h-4" />
+                            </button>
+                            <button
                               onClick={() => openDeleteModal(doc)}
                               className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                               title="Delete"
@@ -698,7 +773,7 @@ const DocumentManagement = () => {
                     multiple
                     onChange={handleFileSelect}
                     className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf"
+                    accept=".pdf,.doc,.docx,.txt,.rtf,.ppt,.pptx,.xls,.xlsx"
                     required
                   />
                   {uploadFiles.length > 0 && (
@@ -1084,6 +1159,16 @@ const DocumentManagement = () => {
                   <button
                     onClick={() => {
                       setShowViewModal(false);
+                      openArchiveModal(selectedDocument);
+                    }}
+                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center space-x-2"
+                  >
+                    <Archive className="w-4 h-4" />
+                    <span>{selectedDocument.status === 'archived' ? 'Unarchive' : 'Archive'}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowViewModal(false);
                       openDeleteModal(selectedDocument);
                     }}
                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
@@ -1092,6 +1177,72 @@ const DocumentManagement = () => {
                     <span>Delete</span>
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Archive Modal */}
+      <AnimatePresence>
+        {showArchiveModal && selectedDocument && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={() => setShowArchiveModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-lg p-6 w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-orange-600">
+                  {selectedDocument.status === 'archived' ? 'Confirm Unarchive' : 'Confirm Archive'}
+                </h2>
+                <button
+                  onClick={() => setShowArchiveModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-700">
+                  {selectedDocument.status === 'archived' 
+                    ? `Are you sure you want to unarchive "${selectedDocument.title}"?` 
+                    : `Are you sure you want to archive "${selectedDocument.title}"?`
+                  }
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  {selectedDocument.status === 'archived' 
+                    ? 'The document will be moved back to active documents.' 
+                    : 'The document will be moved to archived documents.'
+                  }
+                </p>
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowArchiveModal(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleArchive}
+                  disabled={submitting}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  {submitting && <RefreshCw className="w-4 h-4 animate-spin" />}
+                  <span>{selectedDocument.status === 'archived' ? 'Unarchive' : 'Archive'}</span>
+                </button>
               </div>
             </motion.div>
           </motion.div>

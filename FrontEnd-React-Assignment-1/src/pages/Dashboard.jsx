@@ -540,6 +540,12 @@ const Dashboard = () => {
                 ) : (
                   <ResponsiveContainer width="100%" height={250}>
                     <BarChart data={activitySeries}>
+                      <defs>
+                        <linearGradient id="colorActivity" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.3}/>
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                       <XAxis dataKey="time" stroke="#6b7280" />
                       <YAxis stroke="#6b7280" allowDecimals={false} />
@@ -555,14 +561,7 @@ const Dashboard = () => {
                         dataKey="activity" 
                         fill="url(#colorActivity)" 
                         radius={[4, 4, 0, 0]}
-                      >
-                        <defs>
-                          <linearGradient id="colorActivity" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
-                            <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.3}/>
-                          </linearGradient>
-                        </defs>
-                      </Bar>
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
