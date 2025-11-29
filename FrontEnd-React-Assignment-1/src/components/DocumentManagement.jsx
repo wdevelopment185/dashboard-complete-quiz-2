@@ -51,7 +51,6 @@ const DocumentManagement = () => {
   const [uploadData, setUploadData] = useState({
     title: '',
     description: '',
-    category: 'document',
     tags: '',
     isPublic: false
   });
@@ -60,7 +59,6 @@ const DocumentManagement = () => {
   const [editData, setEditData] = useState({
     title: '',
     description: '',
-    category: 'document',
     tags: '',
     isPublic: false
   });
@@ -141,7 +139,7 @@ const DocumentManagement = () => {
       // Add metadata
       formData.append('title', uploadData.title);
       formData.append('description', uploadData.description);
-      formData.append('category', uploadData.category);
+      formData.append('category', 'document');
       formData.append('tags', uploadData.tags);
       formData.append('isPublic', uploadData.isPublic);
       
@@ -157,7 +155,6 @@ const DocumentManagement = () => {
       setUploadData({
         title: '',
         description: '',
-        category: 'document',
         tags: '',
         isPublic: false
       });
@@ -255,8 +252,24 @@ const DocumentManagement = () => {
 
   // Handle file selection
   const handleFileSelect = (e) => {
-    const selectedFiles = Array.from(e.target.files);
-    setUploadFiles(selectedFiles);
+    const files = Array.from(e.target.files);
+    const allowed = new Set(['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.rtf']);
+    const accepted = [];
+    const rejected = [];
+
+    files.forEach(file => {
+      const ext = '.' + file.name.toLowerCase().split('.').pop();
+      if (allowed.has(ext)) accepted.push(file); else rejected.push(file.name);
+    });
+
+    if (rejected.length) {
+      setMessage({
+        text: `Unsupported files skipped: ${rejected.slice(0,3).join(', ')}${rejected.length>3?` (+${rejected.length-3} more)`:''}`,
+        type: 'error'
+      });
+    }
+
+    setUploadFiles(accepted);
   };
 
   // Open edit modal
@@ -265,7 +278,6 @@ const DocumentManagement = () => {
     setEditData({
       title: document.title,
       description: document.description || '',
-      category: document.category,
       tags: document.tags ? document.tags.join(', ') : '',
       isPublic: document.isPublic
     });
@@ -351,9 +363,10 @@ const DocumentManagement = () => {
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
-            className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg text-white shadow-lg ${
+            className={`fixed top-4 right-4 z-60 px-6 py-3 rounded-lg text-white shadow-lg ${
               message.type === 'success' ? 'bg-green-500' : 'bg-red-500'
             }`}
+            style={{ pointerEvents: 'none' }}
           >
             <div className="flex items-center space-x-2">
               {message.type === 'success' ? (
@@ -685,7 +698,7 @@ const DocumentManagement = () => {
                     multiple
                     onChange={handleFileSelect}
                     className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.mp4,.mp3,.zip,.rar"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf"
                     required
                   />
                   {uploadFiles.length > 0 && (
@@ -721,22 +734,7 @@ const DocumentManagement = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category
-                  </label>
-                  <select
-                    value={uploadData.category}
-                    onChange={(e) => setUploadData(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {categories.filter(cat => cat.value !== 'all').map(cat => (
-                      <option key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {/* Category removed: uploads are documents-only */}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -840,22 +838,7 @@ const DocumentManagement = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category
-                  </label>
-                  <select
-                    value={editData.category}
-                    onChange={(e) => setEditData(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {categories.filter(cat => cat.value !== 'all').map(cat => (
-                      <option key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {/* Category removed in edit: documents remain categorized as 'document' */}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

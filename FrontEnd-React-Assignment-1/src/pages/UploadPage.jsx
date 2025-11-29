@@ -39,19 +39,12 @@ const UploadPage = () => {
 
   // Form data for batch upload
   const [batchData, setBatchData] = useState({
-    category: 'document',
     tags: '',
     isPublic: false,
     description: ''
   });
 
-  const categories = [
-    { value: 'document', label: 'Document', icon: FileText, color: 'blue', accept: '.pdf,.doc,.docx,.txt,.rtf' },
-    { value: 'image', label: 'Image', icon: Image, color: 'green', accept: '.jpg,.jpeg,.png,.gif,.bmp,.svg' },
-    { value: 'video', label: 'Video', icon: Film, color: 'purple', accept: '.mp4,.avi,.mov,.wmv,.flv,.webm' },
-    { value: 'audio', label: 'Audio', icon: Music, color: 'yellow', accept: '.mp3,.wav,.flac,.aac,.ogg' },
-    { value: 'other', label: 'Other', icon: Archive, color: 'gray', accept: '.zip,.rar,.7z,.tar,.gz' }
-  ];
+  // Category selection removed; uploads are documents-only
 
   // Get file icon based on extension
   const getFileIcon = (filename) => {
@@ -82,14 +75,35 @@ const UploadPage = () => {
 
   // Add files to upload queue
   const addFiles = (files) => {
-    const newFiles = files.map(file => ({
-      id: Date.now() + Math.random(),
-      file,
-      status: 'pending', // pending, uploading, success, error
-      progress: 0,
-      error: null
-    }));
-    setUploadFiles(prev => [...prev, ...newFiles]);
+    const allowed = new Set(['.pdf', '.doc', '.docx', '.txt', '.rtf', '.ppt', '.pptx', '.xls', '.xlsx']);
+    const accepted = [];
+    const rejected = [];
+
+    files.forEach(file => {
+      const ext = '.' + file.name.toLowerCase().split('.').pop();
+      if (allowed.has(ext)) {
+        accepted.push({
+          id: Date.now() + Math.random(),
+          file,
+          status: 'pending',
+          progress: 0,
+          error: null
+        });
+      } else {
+        rejected.push(file.name);
+      }
+    });
+
+    if (rejected.length) {
+      setMessage({
+        text: `Unsupported files skipped: ${rejected.slice(0,3).join(', ')}${rejected.length>3?` (+${rejected.length-3} more)`:''}`,
+        type: 'error'
+      });
+    }
+
+    if (accepted.length) {
+      setUploadFiles(prev => [...prev, ...accepted]);
+    }
   };
 
   // Remove file from queue
@@ -135,7 +149,7 @@ const UploadPage = () => {
 
         const formData = new FormData();
         formData.append('files', fileObj.file);
-        formData.append('category', batchData.category);
+        formData.append('category', 'document');
         formData.append('tags', batchData.tags);
         formData.append('isPublic', batchData.isPublic);
         formData.append('description', batchData.description);
@@ -353,7 +367,7 @@ const UploadPage = () => {
                 multiple
                 onChange={handleFileSelect}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.mp4,.mp3,.zip,.rar"
+                accept=".pdf,.doc,.docx,.txt,.rtf,.ppt,.pptx,.xls,.xlsx"
               />
               
               <div className="space-y-6">
@@ -368,7 +382,7 @@ const UploadPage = () => {
                     Drop files here or click to browse
                   </p>
                   <p className="text-xs text-gray-400">
-                    Support for documents, images, videos, and archives up to 50MB each
+                    Supported: PDF, DOC, DOCX, TXT, RTF, PPT, PPTX, XLS, XLSX (max 50MB each)
                   </p>
                 </div>
                 <button
@@ -486,23 +500,7 @@ const UploadPage = () => {
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-                    Category
-                  </label>
-                  <select
-                    id="category"
-                    value={batchData.category}
-                    onChange={(e) => setBatchData(prev => ({ ...prev, category: e.target.value }))}
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  >
-                    {categories.map(cat => (
-                      <option key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {/* Category removed: uploads are treated as documents */}
 
                 <div>
                   <label htmlFor="tags" className="block text-sm font-medium text-gray-700">
@@ -564,7 +562,8 @@ const UploadPage = () => {
               </h4>
               <ul className="text-sm text-blue-800 space-y-1">
                 <li>• Maximum file size: 50MB per file</li>
-                <li>• Supported formats: PDF, DOC, images, videos, archives</li>
+                <li>• Supported formats: PDF, DOC, DOCX, TXT, RTF, PPT, PPTX, XLS, XLSX</li>
+                <li>• Non-text files (images/audio/video/archives) are not permitted</li>
                 <li>• Multiple files can be uploaded simultaneously</li>
                 <li>• Use descriptive titles and tags for better organization</li>
               </ul>

@@ -33,16 +33,29 @@ const upload = multer({
     files: 10 // Max 10 files
   },
   fileFilter: (req, file, cb) => {
-    // Allow all common file types
-    const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar|mp4|mp3|avi|mov/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    // Restrict to document types only (no images/audio/video/archives)
+    const allowedExtensions = new Set(['.pdf', '.doc', '.docx', '.txt', '.ppt', '.pptx', '.xls', '.xlsx', '.rtf']);
+    const allowedMimePrefixes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/rtf'
+    ];
 
-    if (mimetype && extname) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const mime = file.mimetype;
+    const extAllowed = allowedExtensions.has(ext);
+    const mimeAllowed = allowedMimePrefixes.some(prefix => mime === prefix);
+
+    if (extAllowed && mimeAllowed) {
       return cb(null, true);
-    } else {
-      cb(new Error('File type not supported'));
     }
+    cb(new Error('Unsupported file type. Allowed: PDF, DOC, DOCX, TXT, RTF, PPT, PPTX, XLS, XLSX'));
   }
 });
 
